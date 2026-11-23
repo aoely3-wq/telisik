@@ -60,7 +60,8 @@ svg.i{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stro
 .ctl{display:flex;align-items:center;gap:8px}
 .ib{width:36px;height:36px;border-radius:8px;display:grid;place-items:center;color:var(--ink2);transition:background-color .15s var(--ease),color .15s var(--ease)}
 .ib:hover{background:var(--accent-soft);color:var(--ink)}
-.date{font-size:14px;font-weight:500;min-width:8.5em;text-align:center;font-variant-numeric:tabular-nums}
+.date,.crange input{font:inherit;font-size:14px;font-weight:500;height:36px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:var(--raised);color:var(--ink);font-variant-numeric:tabular-nums}
+.date:focus-visible,.crange input:focus-visible{border-color:var(--line2)}
 .search{display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:8px;background:var(--raised);border:1px solid var(--line);color:var(--ink3);flex:1 1 200px;max-width:260px;transition:border-color .15s var(--ease)}
 .search:focus-within{border-color:var(--line2);color:var(--ink)}
 .search input{all:unset;flex:1;min-width:0;font-size:14px;color:var(--ink)}
@@ -155,7 +156,13 @@ main{padding-block:24px 56px;display:flex;flex-direction:column;gap:48px;animati
 .pr{padding-block:12px;border-bottom:1px solid var(--line);font-size:14px}
 .pr:last-child{border-bottom:0}
 .pr .no{font-family:var(--f-mono);font-size:12px;color:var(--ink3)}
-.cell{display:flex;align-items:center;gap:4px;min-height:16px}
+.cell{display:flex;align-items:center;gap:4px;min-height:16px;flex-wrap:wrap}
+a.sq{cursor:pointer}
+a.sq:hover{outline:2px solid var(--ink3);outline-offset:1px}
+.lk{margin-top:4px}
+.row .lk{margin-top:6px}
+.rng{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.crange{display:inline-flex;gap:8px;align-items:center;font-size:13px;color:var(--ink3)}
 .sq{display:inline-block;width:16px;height:16px;border-radius:4px;background:var(--steel)}
 .sq.v{background:var(--gold)}
 .sq.e{background:transparent;box-shadow:inset 0 0 0 1px var(--line2)}
@@ -274,7 +281,7 @@ footer p b{display:block;color:var(--ink2);font-weight:500;margin-bottom:4px}
     </div>
     <div class="ctl">
       <button class="ib" id="prev" aria-label="Tanggal sebelumnya"><svg class="i" viewBox="0 0 16 16"><path d="M10 3L5 8l5 5"/></svg></button>
-      <span class="date" id="date">–</span>
+      <input class="date" id="date" type="date" aria-label="Pilih tanggal">
       <button class="ib" id="next" aria-label="Tanggal berikutnya"><svg class="i" viewBox="0 0 16 16"><path d="M6 3l5 5-5 5"/></svg></button>
     </div>
     <label class="search"><svg class="i" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg><input id="q" type="search" placeholder="Cari" aria-label="Cari berita"></label>
@@ -322,7 +329,7 @@ footer p b{display:block;color:var(--ink2);font-weight:500;margin-bottom:4px}
   <section data-view="berita" aria-labelledby="h-pkpn">
     <div class="board">
       <div class="board-h">
-        <div><h2 id="h-pkpn">Program prioritas</h2><p>Perkembangan pada tanggal terpilih untuk delapan program, nasional dan Babel</p></div>
+        <div><h2 id="h-pkpn">Program prioritas</h2><p>Perkembangan pada tanggal terpilih untuk delapan program, nasional dan Babel. Kotak berwarna dapat diklik untuk membuka sumber berita.</p></div>
         <div class="sums" id="sums"></div>
       </div>
       <div class="cols"><span>#</span><span>Program</span><span>Nasional</span><span>Babel</span></div>
@@ -334,7 +341,8 @@ footer p b{display:block;color:var(--ink2);font-weight:500;margin-bottom:4px}
   <section data-view="tone" aria-labelledby="h-tone" hidden>
     <div class="sec-h">
       <h2 id="h-tone">Tone berita dan rekomendasi NETRA</h2>
-      <div class="seg" role="group" aria-label="Rentang waktu"><button data-range="1" aria-pressed="false">Hari ini</button><button data-range="3" aria-pressed="true">3 hari</button><button data-range="7" aria-pressed="false">7 hari</button></div>
+      <div class="rng"><div class="seg" role="group" aria-label="Rentang waktu, berakhir di tanggal terpilih"><button data-range="1" aria-pressed="false">Tanggal ini</button><button data-range="3" aria-pressed="true">3 hari</button><button data-range="7" aria-pressed="false">7 hari</button><button data-range="30" aria-pressed="false">30 hari</button><button data-range="all" aria-pressed="false">Semua</button><button data-range="custom" aria-pressed="false">Pilih tanggal</button></div>
+        <span class="crange" id="crange" hidden><input type="date" id="rf" aria-label="Dari tanggal"><span>sampai</span><input type="date" id="rt" aria-label="Sampai tanggal"></span></div>
     </div>
     <div class="tgrid">
       <div class="panel">
@@ -435,7 +443,13 @@ let ROWS=[],dates=[],shown=[],elig=[],META={maxNomor:0,lastRun:""};
 const imgCache=new Map();   // link berita -> URL gambar ("" = tidak ada)
 const state={cat:"all",q:"",di:0},ts={range:"3",tone:"semua"};
 const day=()=>ROWS.filter(x=>x.d===dates[state.di]);
-const rangeRows=()=>{const ds=dates.slice(state.di,state.di+(+ts.range));return ROWS.filter(x=>ds.includes(x.d))};
+const addDays=(d,n)=>{const t=new Date(d+"T00:00:00Z");t.setUTCDate(t.getUTCDate()+n);return t.toISOString().slice(0,10)};
+// rentang kalender yang berakhir di tanggal terpilih (1/3/7/30 hari), seluruh data, atau rentang kustom
+const rangeRows=()=>{
+  const end=dates[state.di]||"";
+  const [a,b]=ts.range==="all"?["","9999-12-31"]:ts.range==="custom"?[ts.from||"",ts.to||"9999-12-31"]:[addDays(end,1-(+ts.range)),end];
+  return ROWS.filter(x=>x.d>=a&&x.d<=b);
+};
 
 async function api(path,opt={}){
   const r=await fetch(path,{...opt,headers:{"Content-Type":"application/json"}});
@@ -496,7 +510,7 @@ $("#pwform").addEventListener("submit",async e=>{
 
 async function load(fresh){
   $("#note").textContent="Memuat data dari Google Sheet…";
-  const r=await api("/api/berita?days=7"+(fresh?"&fresh=1":"")).catch(()=>({ok:false,status:0,body:{}}));
+  const r=await api("/api/berita?days=all"+(fresh?"&fresh=1":"")).catch(()=>({ok:false,status:0,body:{}}));
   if(r.status===401){gate("Sesi berakhir, silakan masuk lagi");$("#note").textContent="";return}
   if(!r.ok){$("#note").innerHTML='Gagal memuat data. <button class="lnk" id="retry">Coba lagi</button>';$("#retry").onclick=()=>load();return}
   ROWS=(r.body.rows||[]).map(norm);
@@ -541,6 +555,7 @@ function armImgs(lazy=true){
   if(lazy)lazyImgs();
 }
 const srcLine=r=>r.src?`<span>${esc(r.src)}</span>`:"";
+const openLink=r=>r.link?`<a class="lnk" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">Buka sumber ${ARROW}</a>`:"";
 const kat=r=>esc(r.knama)+(r.program?` · ${esc(r.program)}`:"");
 
 function card(r,i){
@@ -555,8 +570,8 @@ function hero(){
   $("#total").textContent=rs.length?rs.length+" berita pada tanggal ini":"";
   if(!rs.length){$("#hero").innerHTML=`<div class="empty" style="grid-column:1/-1">Belum ada data. Jalankan bot atau tekan Tarik berita.</div>`;return}
   const lead=rs.find(x=>x.netra==="Direkomendasikan")||rs[0],rest=rs.filter(x=>x!==lead).slice(0,5);
-  $("#hero").innerHTML=`<article class="lead">${thumb(lead)}<div class="kicker"><span class="c">${kat(lead)}</span><span class="tone t-${lead.tone}">${cap(lead.tone)}</span>${srcLine(lead)}</div><h3>${esc(lead.t)}</h3></article>
-  <div class="latest"><h4>Lainnya</h4>${rest.map(n=>`<div class="row">${thumb(n)}<div><h3>${esc(n.t)}</h3><div class="m mono">${esc(n.knama)}${n.src?" · "+esc(n.src):""}</div></div></div>`).join("")}</div>`;
+  $("#hero").innerHTML=`<article class="lead">${thumb(lead)}<div class="kicker"><span class="c">${kat(lead)}</span><span class="tone t-${lead.tone}">${cap(lead.tone)}</span>${srcLine(lead)}</div><h3>${esc(lead.t)}</h3><div class="lk">${openLink(lead)}</div></article>
+  <div class="latest"><h4>Lainnya</h4>${rest.map(n=>`<div class="row">${thumb(n)}<div><h3>${esc(n.t)}</h3><div class="m mono">${esc(n.knama)}${n.src?" · "+esc(n.src):""}</div><div class="lk">${openLink(n)}</div></div></div>`).join("")}</div>`;
 }
 function list(){
   const q=state.q.toLowerCase();
@@ -568,17 +583,22 @@ function tabs(){
   const rs=day(),cnt=k=>rs.filter(n=>k==="all"||n.k===k).length;
   $("#tabs").innerHTML=[{k:"all",n:"Semua"},...CATS].map(c=>`<button class="tab" data-cat="${esc(c.k)}" aria-pressed="${state.cat===c.k}">${esc(c.n)}<i>${cnt(c.k)}</i></button>`).join("");
 }
-function cells(n,v,b){
-  const out=[];for(let i=0;i<4;i++)out.push(`<i class="sq ${i<n?(i<v?"v":""):"e"}"></i>`);
-  return `<div class="cell ${b?"b":""}" data-l="${b?"Babel":"Nasional"}">${out.join("")}<span class="x">${n?n+" berita":"belum ada"}</span></div>`}
+// satu kotak per berita; kotak berisi berita bisa diklik untuk membuka sumbernya, kotak kosong melengkapi sampai empat
+function cells(list,b){
+  const sq=list.map(r=>{
+    const c="sq"+(r.v?" v":"");
+    return r.link?`<a class="${c}" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer" title="${esc(r.t)}" aria-label="Buka sumber: ${esc(r.t)}"></a>`:`<i class="${c}" title="${esc(r.t)}"></i>`;
+  });
+  while(sq.length<4)sq.push('<i class="sq e"></i>');
+  return `<div class="cell ${b?"b":""}" data-l="${b?"Babel":"Nasional"}">${sq.join("")}<span class="x">${list.length?list.length+" berita":"belum ada"}</span></div>`}
 function board(){
   const rs=day();
-  const cnt=t=>{const a=Array.from({length:8},()=>[0,0]);
-    rs.filter(x=>x.pkpn===t).forEach(x=>{const n=x.programNo-1;if(n>=0&&n<8){a[n][0]++;if(x.v)a[n][1]++}});return a};
+  const cnt=t=>{const a=Array.from({length:8},()=>[]);
+    rs.filter(x=>x.pkpn===t).forEach(x=>{const n=x.programNo-1;if(n>=0&&n<8)a[n].push(x)});return a};
   const PK={nas:cnt("nas"),babel:cnt("babel")};
   $("#pk").innerHTML=PROG.map((p,i)=>{const a=PK.nas[i],b=PK.babel[i];
-    return `<div class="pr ${a[0]+b[0]?"":"zero"}"><span class="no">${String(i+1).padStart(2,"0")}</span><span class="nm">${p}</span>${cells(a[0],a[1],false)}${cells(b[0],b[1],true)}</div>`}).join("");
-  const c=t=>PK[t].filter(x=>x[0]>0).length;
+    return `<div class="pr ${a.length+b.length?"":"zero"}"><span class="no">${String(i+1).padStart(2,"0")}</span><span class="nm">${p}</span>${cells(a,false)}${cells(b,true)}</div>`}).join("");
+  const c=t=>PK[t].filter(x=>x.length>0).length;
   $("#sums").innerHTML=`<div class="sum"><span>Nasional</span><b>${c("nas")}<em> / 8</em></b></div><div class="sum"><span>Babel</span><b>${c("babel")}<em> / 8</em></b></div>`;
 }
 
@@ -590,16 +610,24 @@ function tone(){
   const mx=Math.max(1,...per.map(x=>x.tot));
   $("#tbars").innerHTML=per.length?per.map(x=>`<div class="tbar"><span>${esc(x.c.n)}</span><div class="bar">${[["p",x.p],["u",x.u],["g",x.g]].map(([k,n])=>n?`<i class="${k}" style="width:${n/mx*100}%"></i>`:"").join("")}</div><span class="tc mono">${x.p} · ${x.u} · ${x.g}</span></div>`).join(""):`<div class="empty">Belum ada data pada rentang ini.</div>`;
   const f=rows.filter(r=>ts.tone==="semua"||r.tone===ts.tone);
-  $("#trows").innerHTML=f.length?f.map(r=>`<div class="tr2"><span class="mono">${dtShort(r.d)}</span><div>${esc(r.t)}<span class="cat2">${kat(r)}</span></div><span class="tone t-${r.tone}">${cap(r.tone)}</span>${ntCell(r)}</div>`).join(""):`<div class="empty">Tidak ada data dengan tone ini pada rentang yang dipilih.</div>`;
+  $("#trows").innerHTML=f.length?f.slice(0,300).map(r=>`<div class="tr2"><span class="mono">${dtShort(r.d)}</span><div>${esc(r.t)}<span class="cat2">${kat(r)}</span></div><span class="tone t-${r.tone}">${cap(r.tone)}</span>${ntCell(r)}</div>`).join("")+(f.length>300?`<div class="empty">Menampilkan 300 dari ${f.length} baris. Persempit rentang tanggal untuk melihat sisanya.</div>`:""):`<div class="empty">Tidak ada data dengan tone ini pada rentang yang dipilih.</div>`;
+  if(ts.range==="custom"&&!ts.from){ts.from=dates[dates.length-1]||"";ts.to=dates[0]||""}   // bawaan: seluruh data, lalu dipersempit
+  $("#crange").hidden=ts.range!=="custom";
+  if(ts.range==="custom"){$("#rf").value=ts.from;$("#rt").value=ts.to}
   document.querySelectorAll("[data-range]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.range===ts.range));
   document.querySelectorAll("[data-tf]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.tf===ts.tone));
   const seen=new Set();
   elig=rows.filter(r=>r.netra==="Direkomendasikan"&&!seen.has(r.t)&&seen.add(r.t));
-  $("#recs").innerHTML=elig.length?elig.map((r,i)=>`<div class="rec"><span class="kat">${kat(r)}</span><h4>${esc(r.t)}</h4><div class="m mono">${esc(r.src)}${r.src?" · ":""}${dtShort(r.d)}</div><div class="ac"><button class="lnk" data-rcopy="${i}">${COPY}Salin untuk NETRA</button>${r.link?`<a class="lnk" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">Buka sumber ${ARROW}</a>`:""}<span class="vf ${r.sent?"ok":""}">${RING}<span>${r.sent?"Diteruskan":"Belum diteruskan"}</span></span></div></div>`).join(""):`<div class="empty">Belum ada berita yang direkomendasikan ke NETRA pada rentang ini.</div>`;
+  $("#recs").innerHTML=elig.length?elig.slice(0,100).map((r,i)=>`<div class="rec"><span class="kat">${kat(r)}</span><h4>${esc(r.t)}</h4><div class="m mono">${esc(r.src)}${r.src?" · ":""}${dtShort(r.d)}</div><div class="ac"><button class="lnk" data-rcopy="${i}">${COPY}Salin untuk NETRA</button>${r.link?`<a class="lnk" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">Buka sumber ${ARROW}</a>`:""}<span class="vf ${r.sent?"ok":""}">${RING}<span>${r.sent?"Diteruskan":"Belum diteruskan"}</span></span></div></div>`).join("")+(elig.length>100?`<div class="empty">Menampilkan 100 dari ${elig.length} rekomendasi. Persempit rentang tanggal untuk melihat sisanya.</div>`:""):`<div class="empty">Belum ada berita yang direkomendasikan ke NETRA pada rentang ini.</div>`;
 }
-function dateLabel(){$("#date").textContent=dates.length?dtLong(dates[state.di]):"–"}
+const dtY=d=>new Date(d+"T00:00").toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"});
+function dateLabel(){
+  const el=$("#date");
+  if(!dates.length){el.value="";return}
+  el.min=dates[dates.length-1];el.max=dates[0];el.value=dates[state.di];
+}
 function refresh(){
-  $("#note").textContent=ROWS.length?`Data Google Sheet · ${ROWS.length} berita dari ${dates.length} tanggal terakhir`:"Sheet belum berisi berita.";
+  $("#note").textContent=ROWS.length?`Data Google Sheet · ${ROWS.length} berita dari ${dates.length} tanggal (${dtY(dates[dates.length-1])} sampai ${dtY(dates[0])})${META.dilewati?` · ${META.dilewati} baris dilewati karena tanggal atau uraian tidak terbaca`:""}`:"Sheet belum berisi berita.";
   $("#last").textContent=META.lastRun?`Data terakhir masuk ${META.lastRun}`:"Belum ada data";
   dateLabel();hero();tabs();list();board();tone();wa();armImgs();
 }
@@ -673,6 +701,17 @@ document.addEventListener("click",e=>{
   if(!e.target.closest(".genwrap"))closeGen();
 });
 $("#q").addEventListener("input",e=>{state.q=e.target.value;list();armImgs()});
+$("#date").addEventListener("change",e=>{
+  const v=e.target.value;if(!v||!dates.length)return;
+  let i=dates.indexOf(v);
+  if(i<0){   // tidak ada berita pada tanggal itu: pilih tanggal berdata yang terdekat
+    i=dates.reduce((b,d,k)=>Math.abs(new Date(d)-new Date(v))<Math.abs(new Date(dates[b])-new Date(v))?k:b,0);
+    toast("Tidak ada berita pada tanggal itu, menampilkan "+dtShort(dates[i]));
+  }
+  state.di=i;state.cat="all";refresh();
+});
+$("#rf").addEventListener("change",e=>{ts.from=e.target.value;tone()});
+$("#rt").addEventListener("change",e=>{ts.to=e.target.value;tone()});
 $("#prev").onclick=()=>{state.di=Math.min(dates.length-1,state.di+1);state.cat="all";refresh()};
 $("#next").onclick=()=>{state.di=Math.max(0,state.di-1);state.cat="all";refresh()};
 $("#theme").onclick=()=>{const r=document.documentElement,d=getComputedStyle(r).colorScheme.includes("dark");r.dataset.theme=d?"light":"dark"};

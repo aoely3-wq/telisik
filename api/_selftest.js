@@ -134,6 +134,13 @@ const login = (username, password, extra) => call(h.login, { method: "POST", bod
   assert.equal(b.body.meta.maxNomor, 4);
   assert.equal(b.body.meta.lastRun, "2026-11-21 06:11");
   assert.equal((await call(h.berita, { cookie: t.cookie, query: { days: "7" } })).body.rows.length, 4);
+  const semua = await call(h.berita, { cookie: t.cookie, query: { days: "all" } });
+  assert.equal(semua.body.rows.length, 4, "days=all memuat seluruh riwayat");
+  assert.equal(semua.body.meta.total, 5, "baris Sheet yang berisi");
+  assert.equal(semua.body.meta.dilewati, 1, "baris tanpa tanggal dihitung sebagai dilewati");
+  assert.equal(semua.body.meta.tanggalAwal, "2026-11-21");
+  assert.equal(semua.body.meta.tanggalAkhir, "2026-11-23");
+  assert.equal((await call(h.berita, { cookie: t.cookie, query: { days: "1" } })).body.rows.length, 2, "days=1 = tanggal terakhir saja");
   assert.equal(sheetReads, 1, "dibaca sekali, sisanya dari cache");
   await call(h.berita, { cookie: t.cookie, query: { fresh: "1" } });
   assert.equal(sheetReads, 2, "fresh=1 melewati cache");
