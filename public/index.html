@@ -89,7 +89,8 @@ main{padding-block:24px 56px;display:flex;flex-direction:column;gap:48px;animati
 .hero{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:32px}
 .lead{display:flex;flex-direction:column;gap:16px;min-width:0}
 .lead .thumb{border-radius:12px}
-.lead h3{font-size:28px;line-height:1.25;letter-spacing:-.015em;font-weight:500;text-wrap:balance}
+.lead h3{font-size:24px;line-height:1.3;letter-spacing:-.015em;font-weight:500;text-wrap:balance}
+.lead .more{font-size:13px;color:var(--ink3);margin-top:-6px}
 .kicker{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--ink3);flex-wrap:wrap}
 .kicker .c{color:var(--ink2);font-weight:500}
 .latest{display:flex;flex-direction:column;min-width:0}
@@ -187,7 +188,12 @@ a.sq:hover{outline:2px solid var(--ink3);outline-offset:1px}
 .tgrid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:32px;align-items:start}
 .tbar{display:grid;grid-template-columns:140px minmax(0,1fr) 72px;gap:16px;align-items:center;padding-block:8px;font-size:14px}
 .bar{display:flex;gap:2px;height:16px}
-.bar i{display:block;height:100%;border-radius:4px;background:var(--c)}
+.bar i,.bar button{display:block;height:100%;border-radius:4px;background:var(--c);border:0;padding:0;cursor:pointer}
+.bar button:hover{filter:brightness(.9)}
+.bar button[aria-pressed=true]{outline:2px solid var(--ink);outline-offset:1px}
+.tl{background:none;border:0;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer}.tl:hover{text-decoration:underline}
+.chip{display:inline-flex;gap:8px;align-items:center;font-size:13px;border:1px solid var(--line2);border-radius:99px;padding:2px 4px 2px 12px;margin-bottom:8px}
+.chip button{border:0;background:none;cursor:pointer;font:inherit;color:var(--ink3)}
 .bar .p{--c:var(--pos)}.bar .u{--c:var(--neu)}.bar .g{--c:var(--neg)}
 .tc{font-size:12px;color:var(--ink3);text-align:right;white-space:nowrap}
 .tbl{overflow-x:auto}
@@ -349,10 +355,11 @@ footer p b{display:block;color:var(--ink2);font-weight:500;margin-bottom:4px}
         <div class="tsum" id="tsum"></div>
         <div id="tbars"></div>
         <div class="legend"><span><i class="sq p"></i>Positif</span><span><i class="sq u"></i>Netral</span><span><i class="sq g"></i>Negatif</span><span class="mono">Per kategori: positif · netral · negatif</span></div>
-        <div class="sec-h" style="margin-top:32px">
+        <div class="sec-h" id="tabel" style="margin-top:32px">
           <h3>Data dari Google Sheet</h3>
           <div class="seg" role="group" aria-label="Filter tone"><button data-tf="semua" aria-pressed="true">Semua</button><button data-tf="positif" aria-pressed="false">Positif</button><button data-tf="netral" aria-pressed="false">Netral</button><button data-tf="negatif" aria-pressed="false">Negatif</button></div>
         </div>
+        <div id="tchip"></div>
         <div class="tbl"><div class="tr2 h"><span>Tanggal</span><span>Berita</span><span>Tone</span><span>Status NETRA</span></div><div id="trows"></div></div>
       </div>
       <div class="panel">
@@ -441,7 +448,7 @@ const copyText=t=>(navigator.clipboard?navigator.clipboard.writeText(t):Promise.
 let ME=null;
 let ROWS=[],dates=[],shown=[],elig=[],META={maxNomor:0,lastRun:""};
 const imgCache=new Map();   // link berita -> URL gambar ("" = tidak ada)
-const state={cat:"all",q:"",di:0},ts={range:"3",tone:"semua"};
+const state={cat:"all",q:"",di:0},ts={range:"3",tone:"semua",cat:"all"};
 const day=()=>ROWS.filter(x=>x.d===dates[state.di]);
 const addDays=(d,n)=>{const t=new Date(d+"T00:00:00Z");t.setUTCDate(t.getUTCDate()+n);return t.toISOString().slice(0,10)};
 // rentang kalender yang berakhir di tanggal terpilih (1/3/7/30 hari), seluruh data, atau rentang kustom
@@ -555,6 +562,7 @@ function armImgs(lazy=true){
   if(lazy)lazyImgs();
 }
 const srcLine=r=>r.src?`<span>${esc(r.src)}</span>`:"";
+const brief=(t,n=22)=>{const w=String(t).trim().split(/\s+/);return w.length>n?w.slice(0,n).join(" ").replace(/[,;:.\-–]+$/,"")+"…":String(t)};   // sorotan dibatasi jumlah kata
 const openLink=r=>r.link?`<a class="lnk" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">Buka sumber ${ARROW}</a>`:"";
 const kat=r=>esc(r.knama)+(r.program?` · ${esc(r.program)}`:"");
 
@@ -570,7 +578,7 @@ function hero(){
   $("#total").textContent=rs.length?rs.length+" berita pada tanggal ini":"";
   if(!rs.length){$("#hero").innerHTML=`<div class="empty" style="grid-column:1/-1">Belum ada data. Jalankan bot atau tekan Tarik berita.</div>`;return}
   const lead=rs.find(x=>x.netra==="Direkomendasikan")||rs[0],rest=rs.filter(x=>x!==lead).slice(0,5);
-  $("#hero").innerHTML=`<article class="lead">${thumb(lead)}<div class="kicker"><span class="c">${kat(lead)}</span><span class="tone t-${lead.tone}">${cap(lead.tone)}</span>${srcLine(lead)}</div><h3>${esc(lead.t)}</h3><div class="lk">${openLink(lead)}</div></article>
+  $("#hero").innerHTML=`<article class="lead">${thumb(lead)}<div class="kicker"><span class="c">${kat(lead)}</span><span class="tone t-${lead.tone}">${cap(lead.tone)}</span>${srcLine(lead)}</div><h3>${esc(brief(lead.t))}</h3>${brief(lead.t)!==lead.t?`<p class="more">Berita selengkapnya, silakan telusuri tautan di bawah.</p>`:""}<div class="lk">${openLink(lead)}</div></article>
   <div class="latest"><h4>Lainnya</h4>${rest.map(n=>`<div class="row">${thumb(n)}<div><h3>${esc(n.t)}</h3><div class="m mono">${esc(n.knama)}${n.src?" · "+esc(n.src):""}</div><div class="lk">${openLink(n)}</div></div></div>`).join("")}</div>`;
 }
 function list(){
@@ -608,9 +616,11 @@ function tone(){
   $("#tsum").innerHTML=["positif","netral","negatif"].map(t=>`<div class="sum"><span class="tone t-${t}">${cap(t)}</span><b>${cnt(t)}</b></div>`).join("")+`<div class="sum"><span>Rekomendasi NETRA</span><b>${rows.filter(r=>r.netra==="Direkomendasikan").length}</b></div>`;
   const per=CATS.map(c=>{const r=rows.filter(x=>x.k===c.k),n=t=>r.filter(x=>x.tone===t).length;return{c,p:n("positif"),u:n("netral"),g:n("negatif"),tot:r.length}}).filter(x=>x.tot);
   const mx=Math.max(1,...per.map(x=>x.tot));
-  $("#tbars").innerHTML=per.length?per.map(x=>`<div class="tbar"><span>${esc(x.c.n)}</span><div class="bar">${[["p",x.p],["u",x.u],["g",x.g]].map(([k,n])=>n?`<i class="${k}" style="width:${n/mx*100}%"></i>`:"").join("")}</div><span class="tc mono">${x.p} · ${x.u} · ${x.g}</span></div>`).join(""):`<div class="empty">Belum ada data pada rentang ini.</div>`;
-  const f=rows.filter(r=>ts.tone==="semua"||r.tone===ts.tone);
-  $("#trows").innerHTML=f.length?f.slice(0,300).map(r=>`<div class="tr2"><span class="mono">${dtShort(r.d)}</span><div>${esc(r.t)}<span class="cat2">${kat(r)}</span></div><span class="tone t-${r.tone}">${cap(r.tone)}</span>${ntCell(r)}</div>`).join("")+(f.length>300?`<div class="empty">Menampilkan 300 dari ${f.length} baris. Persempit rentang tanggal untuk melihat sisanya.</div>`:""):`<div class="empty">Tidak ada data dengan tone ini pada rentang yang dipilih.</div>`;
+  $("#tbars").innerHTML=per.length?per.map(x=>`<div class="tbar"><button class="tl" data-tcat="${esc(x.c.k)}">${esc(x.c.n)}</button><div class="bar">${[["p",x.p,"positif"],["u",x.u,"netral"],["g",x.g,"negatif"]].map(([k,n,t])=>n?`<button class="${k}" style="width:${n/mx*100}%" data-tcat="${esc(x.c.k)}" data-ttone="${t}" aria-pressed="${ts.cat===x.c.k&&ts.tone===t}" title="${esc(x.c.n)} · ${cap(t)}: ${n} berita"></button>`:"").join("")}</div><span class="tc mono">${x.p} · ${x.u} · ${x.g}</span></div>`).join(""):`<div class="empty">Belum ada data pada rentang ini.</div>`;
+  const f=rows.filter(r=>(ts.tone==="semua"||r.tone===ts.tone)&&(ts.cat==="all"||r.k===ts.cat));
+  const cn=(CATS.find(c=>c.k===ts.cat)||{}).n;
+  $("#tchip").innerHTML=ts.cat!=="all"&&cn?`<span class="chip">Kategori: ${esc(cn)}${ts.tone!=="semua"?" · "+cap(ts.tone):""}<button data-tclear aria-label="Hapus filter kategori">✕</button></span>`:"";
+  $("#trows").innerHTML=f.length?f.slice(0,300).map(r=>`<div class="tr2"><span class="mono">${dtShort(r.d)}</span><div>${esc(r.t)}<span class="cat2">${kat(r)}</span><div class="lk">${openLink(r)}</div></div><span class="tone t-${r.tone}">${cap(r.tone)}</span>${ntCell(r)}</div>`).join("")+(f.length>300?`<div class="empty">Menampilkan 300 dari ${f.length} baris. Persempit rentang tanggal untuk melihat sisanya.</div>`:""):`<div class="empty">Tidak ada data dengan tone ini pada rentang yang dipilih.</div>`;
   if(ts.range==="custom"&&!ts.from){ts.from=dates[dates.length-1]||"";ts.to=dates[0]||""}   // bawaan: seluruh data, lalu dipersempit
   $("#crange").hidden=ts.range!=="custom";
   if(ts.range==="custom"){$("#rf").value=ts.from;$("#rt").value=ts.to}
@@ -694,6 +704,8 @@ document.querySelectorAll(".views button").forEach(b=>b.onclick=()=>{cur=b.datas
 /* ---------- interaksi ---------- */
 document.addEventListener("click",e=>{
   const ch=e.target.closest("[data-cat]");if(ch){state.cat=ch.dataset.cat;tabs();list();armImgs();return}
+  const tc=e.target.closest("[data-tcat]");if(tc){ts.cat=tc.dataset.tcat;ts.tone=tc.dataset.ttone||"semua";tone();$("#tabel").scrollIntoView({behavior:"smooth",block:"start"});return}
+  if(e.target.closest("[data-tclear]")){ts.cat="all";ts.tone="semua";tone();return}
   const cp=e.target.closest("[data-copy]");if(cp){const r=shown[cp.dataset.copy];copyText(r.t+(r.link?"\n"+r.link:""));return}
   const rc=e.target.closest("[data-rcopy]");if(rc){const r=elig[rc.dataset.rcopy];copyText(r.t+(r.link?"\n"+r.link:""));return}
   const b=e.target.closest("[data-range],[data-tf]");
