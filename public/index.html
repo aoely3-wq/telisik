@@ -132,6 +132,7 @@ main{padding-block:24px 56px;display:flex;flex-direction:column;gap:48px;animati
 .vf.ok .ring .h{stroke:var(--gold)}
 .vf.ok .ring .ck{opacity:1}
 .empty{grid-column:1/-1;color:var(--ink3);padding:48px 24px;text-align:center;border:1px dashed var(--line2);border-radius:12px}
+.nt-badge{font-size:11px;font-weight:500;color:var(--ink);border:1px solid var(--line2);border-radius:99px;padding:0 8px;line-height:18px}
 .tone{display:inline-flex;align-items:center;gap:6px;color:var(--ink2)}
 .tone::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c,var(--neu));flex:none}
 .t-positif{--c:var(--pos)}.t-netral{--c:var(--neu)}.t-negatif{--c:var(--neg)}
@@ -281,11 +282,10 @@ footer p b{display:block;color:var(--ink2);font-weight:500;margin-bottom:4px}
       <button class="btn-p" id="gen" aria-expanded="false" aria-controls="genp"><svg class="i" viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.5-3.5M13 2.5V5h-2.5"/></svg>Tarik berita</button>
       <div class="gen" id="genp" role="dialog" aria-label="Tarik berita" hidden>
         <div><h3>Tarik berita sekarang</h3><p class="last" id="last">Memuat status…</p></div>
-        <div class="checks" id="checks"></div>
-        <label class="chk"><input type="checkbox" id="tg" checked>Kirim ringkasan ke Telegram</label>
+        <p class="last">Menjalankan bot di Render. Bot mencari berita dan mengirim briefing ke admin di Telegram, lalu menambah baris ke Google Sheet. Server gratis bisa tertidur, jadi pemicu pertama kadang butuh sekitar satu menit.</p>
         <ol class="steps" id="steps" hidden></ol>
         <button class="btn-p" id="go">Mulai tarik berita</button>
-        <p class="last">Hasil masuk ke Google Sheet. Dibatasi sekali per 30 menit untuk menjaga biaya API.</p>
+        <p class="last">Dibatasi sekali per 30 menit untuk menjaga kuota API.</p>
       </div>
     </div>
     <div class="genwrap">
@@ -349,7 +349,7 @@ footer p b{display:block;color:var(--ink2);font-weight:500;margin-bottom:4px}
       </div>
       <div class="panel">
         <div class="sec-h"><h3>Rekomendasi untuk NETRA</h3></div>
-        <p class="intro">Berita pilihan untuk dikirim ke aplikasi NETRA di kantor pusat. Syaratnya tone positif dan lolos salah satu dari empat query boolean. Tanda "diteruskan" diisi di kolom status_netra pada Sheet.</p>
+        <p class="intro">Berita bertanda Direkomendasikan oleh penilaian bot untuk dikirim ke aplikasi NETRA di kantor pusat. Berita bertone negatif tidak pernah direkomendasikan. Tanda "diteruskan" diisi di kolom Diteruskan ke NETRA pada Sheet (tambahkan kolom itu di sebelah kanan jika dibutuhkan).</p>
         <div id="recs"></div>
       </div>
     </div>
@@ -376,7 +376,7 @@ footer p b{display:block;color:var(--ink2);font-weight:500;margin-bottom:4px}
 
   <footer>
     <img src="/telisik-badge.jpg" alt="Lencana telisik" width="72">
-    <p><b>telisik, otomasi data &amp; berita regional</b>Ringkasan dibuat otomatis dari sumber publik. Angka yang akan dikutip ke KFR atau ALCo diverifikasi dulu ke sumber aslinya, lalu ditandai dengan cincin emas di kolom verifikasi pada Sheet.</p>
+    <p><b>telisik, otomasi data &amp; berita regional</b>Ringkasan dibuat otomatis dari sumber publik. Angka yang akan dikutip ke KFR atau ALCo diverifikasi dulu ke sumber aslinya, lalu ditandai dengan cincin emas lewat kolom Verifikasi pada Sheet (tambahkan kolom itu di sebelah kanan jika dibutuhkan).</p>
   </footer>
 </main></div>
 <section class="gate" id="pwp" hidden>
@@ -411,17 +411,8 @@ const SC={
  pkpnNas:()=>`<rect width="320" height="180" fill="${P.pl}"/><circle cx="256" cy="52" r="22" fill="${P.go}"/><path d="M0 108 Q80 80 160 100 T320 92 V180 H0z" fill="${P.lb}"/><path d="M0 128 Q90 102 170 122 T320 114 V180 H0z" fill="${P.n3}"/><path d="M0 150 Q100 128 180 144 T320 138 V180 H0z" fill="${P.n2}"/><path d="M0 168 Q110 152 190 162 T320 158 V180 H0z" fill="${P.n1}"/><polygon points="52,86 72,68 92,86" fill="${P.n1}"/><rect x="58" y="86" width="28" height="12" fill="${P.n2}"/>`
 };
 
-/* ---------- konfigurasi (kunci kategori sama dengan categories.py) ---------- */
-const CATS=[
- {k:"fiskal_moneter",n:"Fiskal & moneter",sc:"fiskal"},
- {k:"komoditas",n:"Komoditas",sc:"komoditas"},
- {k:"geopolitik",n:"Geopolitik",sc:"global"},
- {k:"pkpn_nasional",n:"PKPN nasional",sc:"pkpnNas"},
- {k:"pkpn_babel",n:"PKPN Babel",sc:"pkpnBabel"},
- {k:"regional_babel_ekonomi",n:"Ekonomi Babel",sc:"ekoBabel"},
- {k:"regional_babel_sosial",n:"Sosial Babel",sc:"sosial"}
-];
-const NKAT={1:"Ekonomi & fiskal regional",2:"PKPN & kesejahteraan",3:"Kemenkeu Satu di daerah",4:"BLU & SMV Kemenkeu"};
+/* ---------- konfigurasi ---------- */
+let CATS=[];   // dibangun dari data Sheet: {k, n, sc}
 const PROG=["Kedaulatan Pangan","Kemandirian Energi dan Air","Pendidikan","Kesehatan","Hilirisasi dan Industrialisasi","Infrastruktur, Perumahan, Ketahanan Bencana","Ekonomi Kerakyatan dan Pembangunan Desa","Penurunan Kemiskinan"];
 
 /* ---------- util ---------- */
@@ -429,7 +420,6 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const cap=s=>s?s[0].toUpperCase()+s.slice(1):"";
 const safeUrl=u=>/^https?:\/\//i.test(u||"")?u:"";
-const catName=(k,f)=>(CATS.find(c=>c.k===k)||{}).n||f||k;
 const jam=iso=>new Date(iso).toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"}).replace(".",":");
 const dtLong=d=>new Date(d+"T00:00").toLocaleDateString("id-ID",{weekday:"short",day:"numeric",month:"short",year:"numeric"});
 const dtShort=d=>new Date(d+"T00:00").toLocaleDateString("id-ID",{day:"numeric",month:"short"});
@@ -439,9 +429,10 @@ const RING='<svg class="ring" viewBox="0 0 20 20" aria-hidden="true"><circle cx=
 function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2400)}
 const copyText=t=>(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("Disalin")).catch(()=>toast("Gagal menyalin, salin manual"));
 
-/* ---------- data ---------- */
+/* ---------- data (baris sudah dinormalkan oleh /api/berita dari tab "Berita" milik bot) ---------- */
 let ME=null;
-let ROWS=[],dates=[],shown=[],elig=[];
+let ROWS=[],dates=[],shown=[],elig=[],META={maxNomor:0,lastRun:""};
+const imgCache=new Map();   // link berita -> URL gambar ("" = tidak ada)
 const state={cat:"all",q:"",di:0},ts={range:"3",tone:"semua"};
 const day=()=>ROWS.filter(x=>x.d===dates[state.di]);
 const rangeRows=()=>{const ds=dates.slice(state.di,state.di+(+ts.range));return ROWS.filter(x=>ds.includes(x.d))};
@@ -453,11 +444,17 @@ async function api(path,opt={}){
 }
 const clean=s=>s.replace(/^\s*(?:[•·\-–*]+|\d+[.)])\s+/,"").replace(/[*_`]/g,"").trim();
 const norm=r=>({
-  d:r.tanggal||"",k:r.kategori_key||"",kat:r.kategori||"",raw:r.teks||"",t:clean(r.teks||""),
-  link:safeUrl(r.link),img:safeUrl(r.gambar),src:r.sumber||"",v:!!(r.verifikasi||"").trim(),
-  tone:["positif","netral","negatif"].includes(r.tone)?r.tone:"netral",
-  no:parseInt(r.netra_kategori,10)||0,tag:r.netra_hashtag||"",kata:r.netra_kata||"",sent:!!(r.status_netra||"").trim()
+  nomor:r.nomor,d:r.tanggal||"",k:r.kategori_key||"",knama:r.kategori_nama||r.kategori||"",sc:r.adegan||"fiskal",
+  pkpn:r.pkpn||"",program:r.program||"",programNo:r.program_no||0,
+  t:clean(r.teks||""),link:safeUrl(r.link),src:r.sumber||"",
+  tone:["positif","netral","negatif"].includes(r.tone)?r.tone:"netral",netra:r.netra||"",
+  v:!!(r.verifikasi||"").trim(),sent:!!(r.diteruskan||"").trim()
 });
+function buildCats(){
+  const seen=new Map();
+  ROWS.forEach(r=>{if(!seen.has(r.k))seen.set(r.k,{k:r.k,n:r.knama,sc:r.sc})});
+  CATS=[...seen.values()];
+}
 
 /* ---------- login, akun, ganti password (sesi lewat cookie HttpOnly dari server) ---------- */
 function gate(msg){$("#gate").hidden=false;$("#gerr").textContent=msg||"";$("#un").focus()}
@@ -503,20 +500,52 @@ async function load(fresh){
   if(r.status===401){gate("Sesi berakhir, silakan masuk lagi");$("#note").textContent="";return}
   if(!r.ok){$("#note").innerHTML='Gagal memuat data. <button class="lnk" id="retry">Coba lagi</button>';$("#retry").onclick=()=>load();return}
   ROWS=(r.body.rows||[]).map(norm);
+  META=r.body.meta||META;
   dates=[...new Set(ROWS.map(x=>x.d))].filter(Boolean).sort().reverse();
   state.di=Math.min(state.di,Math.max(0,dates.length-1));
-  refresh();
+  buildCats();refresh();
 }
 
 /* ---------- tampilan ---------- */
-function art(k){const c=CATS.find(x=>x.k===k);return `<svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${SC[c?c.sc:"fiskal"]()}</svg>`}
-function thumb(r){return `<div class="thumb">${r.img?`<img class="pic" src="${esc(r.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-k="${esc(r.k)}">`:art(r.k)}</div>`}
-function armImgs(){document.querySelectorAll("img.pic").forEach(i=>i.addEventListener("error",()=>{i.outerHTML=art(i.dataset.k)},{once:true}))}
+function art(sc){return `<svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${SC[SC[sc]?sc:"fiskal"]()}</svg>`}
+const imgTag=(sc,url)=>`<img class="pic" src="${esc(url)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-sc="${esc(sc)}">`;
+function thumb(r){
+  const u=imgCache.get(r.link);
+  return `<div class="thumb"${r.link?` data-link="${esc(r.link)}"`:""} data-sc="${esc(r.sc)}">${u?imgTag(r.sc,u):art(r.sc)}</div>`;
+}
+// gambar asli diambil saat halaman dibuka (Sheet tidak punya kolom gambar); gagal/kosong -> ilustrasi cadangan
+function lazyImgs(){
+  const todo=[...document.querySelectorAll(".thumb[data-link]")].filter(e=>!imgCache.has(e.dataset.link)&&!e.dataset.busy);
+  todo.forEach(e=>{e.dataset.busy="1"});
+  const queue=[...new Set(todo.map(e=>e.dataset.link))];
+  const worker=async()=>{
+    while(queue.length){
+      const link=queue.shift();
+      let url="";
+      try{const r=await api("/api/gambar?u="+encodeURIComponent(link));url=r.ok?safeUrl(r.body.gambar):""}catch(e){}
+      imgCache.set(link,url);
+      document.querySelectorAll(".thumb[data-link]").forEach(el=>{
+        if(el.dataset.link!==link)return;
+        delete el.dataset.busy;
+        if(url){el.innerHTML=imgTag(el.dataset.sc,url);armImgs(false)}
+      });
+    }
+  };
+  for(let i=0;i<3;i++)worker();
+}
+function armImgs(lazy=true){
+  document.querySelectorAll("img.pic").forEach(i=>i.addEventListener("error",()=>{
+    const t=i.closest(".thumb");if(t&&t.dataset.link)imgCache.set(t.dataset.link,"");
+    i.outerHTML=art(i.dataset.sc);
+  },{once:true}));
+  if(lazy)lazyImgs();
+}
 const srcLine=r=>r.src?`<span>${esc(r.src)}</span>`:"";
+const kat=r=>esc(r.knama)+(r.program?` · ${esc(r.program)}`:"");
 
 function card(r,i){
   return `<article class="card${i%4===0?" wide":""}">${thumb(r)}<div><div class="b">
-  <div class="kicker"><span class="c">${esc(catName(r.k,r.kat))}</span><span class="tone t-${r.tone}">${cap(r.tone)}</span></div>
+  <div class="kicker"><span class="c">${kat(r)}</span><span class="tone t-${r.tone}">${cap(r.tone)}</span>${r.netra==="Direkomendasikan"?'<span class="nt-badge">NETRA</span>':""}</div>
   <h3>${esc(r.t)}</h3><div class="kicker">${srcLine(r)}</div></div>
   <div class="acts">${r.link?`<a class="lnk" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">Buka sumber ${ARROW}</a>`:""}<button class="lnk" data-copy="${i}">${COPY}Salin</button>
   <span class="vf ${r.v?"ok":""}">${RING}<span>${r.v?"Terverifikasi":"Perlu verifikasi"}</span></span></div></div></article>`}
@@ -524,62 +553,63 @@ function card(r,i){
 function hero(){
   const rs=day();
   $("#total").textContent=rs.length?rs.length+" berita pada tanggal ini":"";
-  if(!rs.length){$("#hero").innerHTML=`<div class="empty" style="grid-column:1/-1">Belum ada data. Jalankan agent atau tekan Tarik berita.</div>`;return}
-  const lead=rs.find(x=>x.img)||rs[0],rest=rs.filter(x=>x!==lead).slice(0,5);
-  $("#hero").innerHTML=`<article class="lead">${thumb(lead)}<div class="kicker"><span class="c">${esc(catName(lead.k,lead.kat))}</span><span class="tone t-${lead.tone}">${cap(lead.tone)}</span>${srcLine(lead)}</div><h3>${esc(lead.t)}</h3></article>
-  <div class="latest"><h4>Lainnya</h4>${rest.map(n=>`<div class="row">${thumb(n)}<div><h3>${esc(n.t)}</h3><div class="m mono">${esc(catName(n.k,n.kat))}${n.src?" · "+esc(n.src):""}</div></div></div>`).join("")}</div>`;
+  if(!rs.length){$("#hero").innerHTML=`<div class="empty" style="grid-column:1/-1">Belum ada data. Jalankan bot atau tekan Tarik berita.</div>`;return}
+  const lead=rs.find(x=>x.netra==="Direkomendasikan")||rs[0],rest=rs.filter(x=>x!==lead).slice(0,5);
+  $("#hero").innerHTML=`<article class="lead">${thumb(lead)}<div class="kicker"><span class="c">${kat(lead)}</span><span class="tone t-${lead.tone}">${cap(lead.tone)}</span>${srcLine(lead)}</div><h3>${esc(lead.t)}</h3></article>
+  <div class="latest"><h4>Lainnya</h4>${rest.map(n=>`<div class="row">${thumb(n)}<div><h3>${esc(n.t)}</h3><div class="m mono">${esc(n.knama)}${n.src?" · "+esc(n.src):""}</div></div></div>`).join("")}</div>`;
 }
 function list(){
   const q=state.q.toLowerCase();
-  shown=day().filter(n=>(state.cat==="all"||n.k===state.cat)&&(!q||(n.t+n.src).toLowerCase().includes(q)));
+  shown=day().filter(n=>(state.cat==="all"||n.k===state.cat)&&(!q||(n.t+n.src+n.knama+n.program).toLowerCase().includes(q)));
   $("#feed").innerHTML=shown.length?shown.map(card).join(""):`<div class="empty">Tidak ada berita yang cocok. Ubah kata kunci atau pilih kategori lain.</div>`;
   $("#count").textContent=shown.length+" berita";
 }
 function tabs(){
   const rs=day(),cnt=k=>rs.filter(n=>k==="all"||n.k===k).length;
-  $("#tabs").innerHTML=[{k:"all",n:"Semua"},...CATS].map(c=>`<button class="tab" data-cat="${c.k}" aria-pressed="${state.cat===c.k}">${c.n}<i>${cnt(c.k)}</i></button>`).join("");
+  $("#tabs").innerHTML=[{k:"all",n:"Semua"},...CATS].map(c=>`<button class="tab" data-cat="${esc(c.k)}" aria-pressed="${state.cat===c.k}">${esc(c.n)}<i>${cnt(c.k)}</i></button>`).join("");
 }
 function cells(n,v,b){
   const out=[];for(let i=0;i<4;i++)out.push(`<i class="sq ${i<n?(i<v?"v":""):"e"}"></i>`);
   return `<div class="cell ${b?"b":""}" data-l="${b?"Babel":"Nasional"}">${out.join("")}<span class="x">${n?n+" berita":"belum ada"}</span></div>`}
 function board(){
   const rs=day();
-  const cnt=k=>{const a=Array.from({length:8},()=>[0,0]);
-    rs.filter(x=>x.k===k).forEach(x=>{const m=/Program Prioritas\s*(\d)/i.exec(x.raw),n=m?+m[1]-1:-1;if(n>=0&&n<8){a[n][0]++;if(x.v)a[n][1]++}});return a};
-  const PK={nas:cnt("pkpn_nasional"),babel:cnt("pkpn_babel")};
+  const cnt=t=>{const a=Array.from({length:8},()=>[0,0]);
+    rs.filter(x=>x.pkpn===t).forEach(x=>{const n=x.programNo-1;if(n>=0&&n<8){a[n][0]++;if(x.v)a[n][1]++}});return a};
+  const PK={nas:cnt("nas"),babel:cnt("babel")};
   $("#pk").innerHTML=PROG.map((p,i)=>{const a=PK.nas[i],b=PK.babel[i];
     return `<div class="pr ${a[0]+b[0]?"":"zero"}"><span class="no">${String(i+1).padStart(2,"0")}</span><span class="nm">${p}</span>${cells(a[0],a[1],false)}${cells(b[0],b[1],true)}</div>`}).join("");
   const c=t=>PK[t].filter(x=>x[0]>0).length;
   $("#sums").innerHTML=`<div class="sum"><span>Nasional</span><b>${c("nas")}<em> / 8</em></b></div><div class="sum"><span>Babel</span><b>${c("babel")}<em> / 8</em></b></div>`;
 }
 
-const ntCell=r=>r.no?`<span class="nt"><b class="okn">Layak · kategori ${r.no}</b><span class="cat2">${NKAT[r.no]||""}</span></span>`:`<span class="nt none">${r.tone==="positif"?"Tidak cocok query":"Tone "+r.tone}</span>`;
+const ntCell=r=>r.netra==="Direkomendasikan"?`<span class="nt"><b class="okn">Direkomendasikan</b></span>`:`<span class="nt none">${esc(r.netra||"Belum dinilai")}</span>`;
 function tone(){
   const rows=rangeRows(),cnt=t=>rows.filter(r=>r.tone===t).length;
-  $("#tsum").innerHTML=["positif","netral","negatif"].map(t=>`<div class="sum"><span class="tone t-${t}">${cap(t)}</span><b>${cnt(t)}</b></div>`).join("")+`<div class="sum"><span>Layak NETRA</span><b>${rows.filter(r=>r.no).length}</b></div>`;
-  const per=CATS.map(c=>{const r=rows.filter(x=>x.k===c.k),n=t=>r.filter(x=>x.tone===t).length;return{c,p:n("positif"),u:n("netral"),g:n("negatif"),tot:r.length}});
+  $("#tsum").innerHTML=["positif","netral","negatif"].map(t=>`<div class="sum"><span class="tone t-${t}">${cap(t)}</span><b>${cnt(t)}</b></div>`).join("")+`<div class="sum"><span>Rekomendasi NETRA</span><b>${rows.filter(r=>r.netra==="Direkomendasikan").length}</b></div>`;
+  const per=CATS.map(c=>{const r=rows.filter(x=>x.k===c.k),n=t=>r.filter(x=>x.tone===t).length;return{c,p:n("positif"),u:n("netral"),g:n("negatif"),tot:r.length}}).filter(x=>x.tot);
   const mx=Math.max(1,...per.map(x=>x.tot));
-  $("#tbars").innerHTML=per.map(x=>`<div class="tbar"><span>${x.c.n}</span><div class="bar">${[["p",x.p],["u",x.u],["g",x.g]].map(([k,n])=>n?`<i class="${k}" style="width:${n/mx*100}%"></i>`:"").join("")}</div><span class="tc mono">${x.p} · ${x.u} · ${x.g}</span></div>`).join("");
+  $("#tbars").innerHTML=per.length?per.map(x=>`<div class="tbar"><span>${esc(x.c.n)}</span><div class="bar">${[["p",x.p],["u",x.u],["g",x.g]].map(([k,n])=>n?`<i class="${k}" style="width:${n/mx*100}%"></i>`:"").join("")}</div><span class="tc mono">${x.p} · ${x.u} · ${x.g}</span></div>`).join(""):`<div class="empty">Belum ada data pada rentang ini.</div>`;
   const f=rows.filter(r=>ts.tone==="semua"||r.tone===ts.tone);
-  $("#trows").innerHTML=f.length?f.map(r=>`<div class="tr2"><span class="mono">${dtShort(r.d)}</span><div>${esc(r.t)}<span class="cat2">${esc(catName(r.k,r.kat))}</span></div><span class="tone t-${r.tone}">${cap(r.tone)}</span>${ntCell(r)}</div>`).join(""):`<div class="empty">Tidak ada data dengan tone ini pada rentang yang dipilih.</div>`;
+  $("#trows").innerHTML=f.length?f.map(r=>`<div class="tr2"><span class="mono">${dtShort(r.d)}</span><div>${esc(r.t)}<span class="cat2">${kat(r)}</span></div><span class="tone t-${r.tone}">${cap(r.tone)}</span>${ntCell(r)}</div>`).join(""):`<div class="empty">Tidak ada data dengan tone ini pada rentang yang dipilih.</div>`;
   document.querySelectorAll("[data-range]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.range===ts.range));
   document.querySelectorAll("[data-tf]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.tf===ts.tone));
   const seen=new Set();
-  elig=rows.filter(r=>r.no&&!seen.has(r.t)&&seen.add(r.t));
-  $("#recs").innerHTML=elig.length?elig.map((r,i)=>`<div class="rec"><span class="kat">Kategori ${r.no} · ${NKAT[r.no]||""}</span><h4>${esc(r.t)}</h4><div class="m mono">Kata cocok: ${esc(r.kata)}</div><div class="m mono">${esc(r.tag)}</div><div class="ac"><button class="lnk" data-rcopy="${i}">${COPY}Salin untuk NETRA</button>${r.link?`<a class="lnk" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">Buka sumber ${ARROW}</a>`:""}<span class="vf ${r.sent?"ok":""}">${RING}<span>${r.sent?"Diteruskan":"Belum diteruskan"}</span></span></div></div>`).join(""):`<div class="empty">Belum ada berita bertone positif yang cocok dengan query NETRA pada rentang ini.</div>`;
+  elig=rows.filter(r=>r.netra==="Direkomendasikan"&&!seen.has(r.t)&&seen.add(r.t));
+  $("#recs").innerHTML=elig.length?elig.map((r,i)=>`<div class="rec"><span class="kat">${kat(r)}</span><h4>${esc(r.t)}</h4><div class="m mono">${esc(r.src)}${r.src?" · ":""}${dtShort(r.d)}</div><div class="ac"><button class="lnk" data-rcopy="${i}">${COPY}Salin untuk NETRA</button>${r.link?`<a class="lnk" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">Buka sumber ${ARROW}</a>`:""}<span class="vf ${r.sent?"ok":""}">${RING}<span>${r.sent?"Diteruskan":"Belum diteruskan"}</span></span></div></div>`).join(""):`<div class="empty">Belum ada berita yang direkomendasikan ke NETRA pada rentang ini.</div>`;
 }
 function dateLabel(){$("#date").textContent=dates.length?dtLong(dates[state.di]):"–"}
 function refresh(){
-  $("#note").textContent=ROWS.length?`Data Google Sheet · ${ROWS.length} baris dari ${dates.length} tanggal terakhir`:"Sheet belum berisi data.";
+  $("#note").textContent=ROWS.length?`Data Google Sheet · ${ROWS.length} berita dari ${dates.length} tanggal terakhir`:"Sheet belum berisi berita.";
+  $("#last").textContent=META.lastRun?`Data terakhir masuk ${META.lastRun}`:"Belum ada data";
   dateLabel();hero();tabs();list();board();tone();wa();armImgs();
 }
 
 /* ---------- pesan WhatsApp: berita pada tanggal terpilih, NETRA di atas ---------- */
 const WA_GROUPS=[
- {k:"netra",n:"Rekomendasi NETRA",test:r=>r.no>0},
- {k:"positif",n:"Berita positif lainnya",test:r=>!r.no&&r.tone==="positif"},
- {k:"netral",n:"Berita netral",test:r=>!r.no&&r.tone==="netral"},
- {k:"negatif",n:"Perlu perhatian (tone negatif)",test:r=>!r.no&&r.tone==="negatif"}
+ {k:"netra",n:"Rekomendasi NETRA",test:r=>r.netra==="Direkomendasikan"},
+ {k:"positif",n:"Berita positif lainnya",test:r=>r.netra!=="Direkomendasikan"&&r.tone==="positif"},
+ {k:"netral",n:"Berita netral",test:r=>r.netra!=="Direkomendasikan"&&r.tone==="netral"},
+ {k:"negatif",n:"Perlu perhatian (tone negatif)",test:r=>r.netra!=="Direkomendasikan"&&r.tone==="negatif"}
 ];
 const waSel={};   // kunci berita -> dipilih (default: semua dipilih)
 const wk=r=>r.link||r.t;
@@ -637,7 +667,7 @@ document.querySelectorAll(".views button").forEach(b=>b.onclick=()=>{cur=b.datas
 document.addEventListener("click",e=>{
   const ch=e.target.closest("[data-cat]");if(ch){state.cat=ch.dataset.cat;tabs();list();armImgs();return}
   const cp=e.target.closest("[data-copy]");if(cp){const r=shown[cp.dataset.copy];copyText(r.t+(r.link?"\n"+r.link:""));return}
-  const rc=e.target.closest("[data-rcopy]");if(rc){const r=elig[rc.dataset.rcopy];copyText(r.t+"\n"+r.link+"\n"+r.tag);return}
+  const rc=e.target.closest("[data-rcopy]");if(rc){const r=elig[rc.dataset.rcopy];copyText(r.t+(r.link?"\n"+r.link:""));return}
   const b=e.target.closest("[data-range],[data-tf]");
   if(b){if(b.dataset.range)ts.range=b.dataset.range;else ts.tone=b.dataset.tf;tone()}
   if(!e.target.closest(".genwrap"))closeGen();
@@ -647,50 +677,44 @@ $("#prev").onclick=()=>{state.di=Math.min(dates.length-1,state.di+1);state.cat="
 $("#next").onclick=()=>{state.di=Math.max(0,state.di-1);state.cat="all";refresh()};
 $("#theme").onclick=()=>{const r=document.documentElement,d=getComputedStyle(r).colorScheme.includes("dark");r.dataset.theme=d?"light":"dark"};
 
-/* ---------- tarik berita (memicu workflow lewat /api/tarik, progres dari /api/status) ---------- */
-const STEPS=["Perintah dikirim ke GitHub","Agent mencari dan menilai berita","Hasil masuk ke Google Sheet"];
+/* ---------- tarik berita: memicu bot di Render lewat /api/tarik; selesai terdeteksi dari Nomor di Sheet yang bertambah ---------- */
+const STEPS=["Pemicu dikirim ke bot","Bot mencari dan menilai berita","Hasil masuk ke Google Sheet"];
 let running=false;
 const closeGen=()=>{$("#genp").hidden=true;$("#gen").setAttribute("aria-expanded","false");closeAcct()};
 const setGo=b=>{$("#go").disabled=b;$("#go").textContent=b?"Berjalan":"Mulai tarik berita"};
-function drawSteps(i,fail){
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+function drawSteps(i,note){
   const ol=$("#steps");ol.hidden=false;
-  ol.innerHTML=STEPS.map((s,j)=>`<li class="${fail&&j===i?"fail":j<i?"done":j===i?"on":""}"><span>${s}</span><span>${fail&&j===i?"gagal":j<i?"selesai":j===i?"berjalan":"menunggu"}</span></li>`).join("");
+  ol.innerHTML=STEPS.map((s,j)=>`<li class="${j<i?"done":j===i?"on":""}"><span>${s}</span><span>${j<i?"selesai":j===i?(note||"berjalan"):"menunggu"}</span></li>`).join("");
 }
-async function lastRun(){
-  const r=await api("/api/status").catch(()=>null);
-  const b=r&&r.ok?r.body:null;
-  $("#last").textContent=b&&b.status&&b.status!=="none"?`Pembaruan terakhir ${jam(b.updated_at)} WIB, ${b.event==="schedule"?"jadwal otomatis":"tarik manual"}`:"Belum ada pembaruan tercatat";
-}
-$("#checks").innerHTML=CATS.map(c=>`<label><input type="checkbox" value="${c.k}" checked>${c.n}</label>`).join("");
-$("#gen").onclick=()=>{closeAcct();const p=$("#genp");p.hidden=!p.hidden;$("#gen").setAttribute("aria-expanded",String(!p.hidden));if(!p.hidden&&!running)lastRun()};
+function stopRun(msg,hideSteps){running=false;setGo(false);if(hideSteps)$("#steps").hidden=true;if(msg)toast(msg)}
+$("#gen").onclick=()=>{closeAcct();const p=$("#genp");p.hidden=!p.hidden;$("#gen").setAttribute("aria-expanded",String(!p.hidden))};
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeGen()});
 $("#go").onclick=async()=>{
   if(running)return;
-  const sel=[...document.querySelectorAll("#checks input:checked")].map(i=>i.value);
-  if(!sel.length){toast("Pilih minimal satu kategori");return}
   running=true;setGo(true);drawSteps(0);
-  const t0=Date.now();
-  const r=await api("/api/tarik",{method:"POST",body:JSON.stringify({kategori:sel.length===CATS.length?[]:sel,telegram:$("#tg").checked})}).catch(()=>({ok:false,status:0,body:{}}));
-  if(!r.ok){
-    running=false;setGo(false);$("#steps").hidden=true;
-    toast(r.status===429?"Tersedia lagi pukul "+jam(r.body.retryAt)+" WIB":r.status===409?"Masih ada proses yang berjalan":r.status===401||r.status===403?"Sesi berakhir atau akun ini bukan admin, masuk lagi":"Gagal memicu agent");
-    return;
+  const before=META.maxNomor;
+  let started="";
+  // server gratis Render bisa tidur: ulangi pemicu tiap 10 detik sampai bot bangun dan menjawab
+  for(let t=0;t<9&&!started;t++){
+    const r=await api("/api/tarik",{method:"POST",body:"{}"}).catch(()=>({ok:false,status:0,body:{}}));
+    if(r.status===429)return stopRun("Tersedia lagi pukul "+jam(r.body.retryAt)+" WIB",true);
+    if(r.status===401||r.status===403)return stopRun("Sesi berakhir atau akun ini bukan admin, masuk lagi",true);
+    if(!r.ok)return stopRun(r.body.error||"Gagal memicu bot",true);
+    if(r.body.state==="dimulai"||r.body.state==="sudah-berjalan"){started=r.body.state;break}
+    drawSteps(0,"menunggu server bangun");
+    await wait(10000);
   }
+  if(!started)return stopRun("Server bot belum bangun. Coba lagi sebentar.",true);
   drawSteps(1);
+  const t0=Date.now();
   const poll=async()=>{
-    const s=await api("/api/status").catch(()=>null),b=s&&s.ok?s.body:null;
-    // run milik kita = dibuat setelah tombol ditekan (toleransi 15 dtk untuk selisih jam)
-    const mine=b&&b.status!=="none"&&Date.parse(b.created_at)>=t0-15000;
-    if(mine&&b.status==="completed"){
-      running=false;setGo(false);
-      if(b.conclusion==="success"){drawSteps(3);await load(true);toast("Berita terbaru sudah masuk")}
-      else{drawSteps(1,true);toast("Agent gagal, cek tab Actions di GitHub")}
-      return;
-    }
-    if(Date.now()-t0>20*60000){running=false;setGo(false);toast("Terlalu lama menunggu, cek tab Actions di GitHub");return}
-    setTimeout(poll,5000);
+    await load(true);
+    if(META.maxNomor>before){stopRun("Berita terbaru sudah masuk");drawSteps(3);return}
+    if(Date.now()-t0>12*60000){stopRun("Belum ada berita baru. Bot mungkin masih berjalan atau memang tidak ada berita baru.");return}
+    setTimeout(poll,15000);
   };
-  setTimeout(poll,5000);
+  setTimeout(poll,15000);
 };
 
 /* ---------- mulai ---------- */

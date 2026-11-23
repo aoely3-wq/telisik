@@ -4,13 +4,13 @@
 // ADMIN_PASSWORD (wajib agar admin bisa masuk) dan TAMU_PASSWORD (default "tamu").
 // Disarankan memakai file Sheet terpisah (USERS_SHEET_ID) agar hash tidak terlihat analis.
 const crypto = require("crypto");
-const { sheetsFetch } = require("./_sheet");
+const { sheetsFetch, sheetId } = require("./_sheet");
 
 const TAB = "pengguna";
 const HEADER = ["username", "hash", "role", "diubah"];
 const ROLES = { admin: "admin", tamu: "user" };
 const SCRYPT = { N: 16384, r: 8, p: 1 };
-const sid = () => process.env.USERS_SHEET_ID || process.env.SHEET_ID;
+const sid = () => process.env.USERS_SHEET_ID || sheetId();
 
 function hashPw(pw, salt = crypto.randomBytes(16)) {
   const h = crypto.scryptSync(pw, salt, 32, SCRYPT);
@@ -69,7 +69,7 @@ async function write(path, method, body) {
   const go = () => sheetsFetch(sid(), path, { method, body, write: true });
   let r = await go();
   if (r.status === 400) { // tab belum ada: buat beserta header, lalu ulangi
-    const a = await sheetsFetch(sid(), ":batchUpdate", { method: "POST", write: true, body: { requests: [{ addSheet: { properties: { title: TAB } } }] } });
+    const a = await sheetsFetch(sid(), ":batchUpdate", { method: "POST", write: true, body: { requests: [{ addSheet: { properties: { title: TAB, hidden: true } } }] } });
     if (!a.ok) throw new Error(`users tab ${a.status}`);
     const h = await sheetsFetch(sid(), `/values/${TAB}!A1:D1?valueInputOption=RAW`, { method: "PUT", write: true, body: { values: [HEADER] } });
     if (!h.ok) throw new Error(`users header ${h.status}`);

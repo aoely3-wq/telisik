@@ -1,6 +1,7 @@
 // Akses Google Sheets lewat REST dengan service account (tanpa dependensi npm).
-// Env: GOOGLE_SERVICE_ACCOUNT_JSON (isi file kunci) dan SHEET_ID, sama dengan yang dipakai agent.
-// Pembacaan berita memakai token read-only; token tulis hanya diminta untuk menyimpan password (_users.js).
+// Env: GOOGLE_SERVICE_ACCOUNT_JSON (isi file kunci), GOOGLE_SHEET_ID (atau SHEET_ID), GOOGLE_SHEET_TAB (default "Berita").
+// Nama env sama dengan yang dipakai bot di Render, jadi nilainya bisa disalin apa adanya.
+// Pembacaan berita memakai token read-only; token tulis hanya dipakai untuk menyimpan password (_users.js).
 const crypto = require("crypto");
 
 const SCOPE_READ = "https://www.googleapis.com/auth/spreadsheets.readonly";
@@ -8,6 +9,8 @@ const SCOPE_WRITE = "https://www.googleapis.com/auth/spreadsheets";
 const toks = {};
 let cache = null;
 const b64 = (s) => Buffer.from(s).toString("base64url");
+const sheetId = () => process.env.GOOGLE_SHEET_ID || process.env.SHEET_ID;
+const tabName = () => process.env.GOOGLE_SHEET_TAB || "Berita";
 
 async function token(write = false) {
   const scope = write ? SCOPE_WRITE : SCOPE_READ;
@@ -31,25 +34,26 @@ async function token(write = false) {
 }
 
 // path diawali "/values/..." atau ":batchUpdate" (relatif terhadap spreadsheet).
-async function sheetsFetch(sheetId, path, { method = "GET", body, write = false } = {}) {
-  return fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}${path}`, {
+async function sheetsFetch(id, path, { method = "GET", body, write = false } = {}) {
+  return fetch(`https://sheets.googleapis.com/v4/spreadsheets/${id}${path}`, {
     method,
     headers: { Authorization: `Bearer ${await token(write)}`, "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
   });
 }
 
-// Semua baris sheet pertama sebagai objek {kolom: nilai}. Di-cache 60 detik per instance.
-// shortcut: membaca seluruh sheet tiap 60 detik; jika baris sudah puluhan ribu, pindah ke
-// pembacaan rentang tanggal terakhir saja atau arsipkan baris lama ke sheet lain.
+// Semua baris tab berita sebagai objek {judul kolom: nilai}. Di-cache 60 detik per instance.
+// Nilai dibaca seperti yang tampil di Sheet (tanggal "dd/mm/yyyy").
+// shortcut: membaca seluruh tab tiap 60 detik; jika baris sudah puluhan ribu, baca rentang terakhir saja
+// atau arsipkan baris lama ke tab lain.
 async function rows(fresh = false) {
   if (!fresh && cache && cache.exp > Date.now()) return cache.rows;
-  const r = await sheetsFetch(process.env.SHEET_ID, "/values/A:Z");
+  const r = await sheetsFetch(sheetId(), `/values/${encodeURIComponent(`'${tabName()}'!A:Z`)}`);
   if (!r.ok) throw new Error(`sheets ${r.status}`);
   const [head = [], ...body] = (await r.json()).values || [];
-  const out = body.map((v) => Object.fromEntries(head.map((h, i) => [h, v[i] || ""])));
+  const out = body.map((v) => Object.fromEntries(head.map((h, i) => [h, v[i] ?? ""])));
   cache = { rows: out, exp: Date.now() + 60000 };
   return out;
 }
 
-module.exports = { rows, sheetsFetch };
+module.exports = { rows, sheetsFetch, sheetId };

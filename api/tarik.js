@@ -1,37 +1,36 @@
-// POST /api/tarik  { kategori?: ["fiskal_moneter", ...], telegram?: boolean }   (hanya admin)
-// Memicu workflow GitHub Actions. Batas satu kali per 30 menit dihitung dari run manual terakhir,
-// jadi tidak butuh penyimpanan sendiri.
-const { gh, WORKFLOW, REF } = require("./_gh");
+// POST /api/tarik   (hanya admin)  ->  { state: "dimulai" | "sudah-berjalan" | "bangun" }
+// Memicu bot di Render lewat POST /cron (header X-Cron-Secret). Bot menjalankan briefing penuh dan mengirimnya ke admin di Telegram,
+// lalu menambah baris ke Sheet. Env: BOT_URL (mis. https://briefing-babel-bot.onrender.com) dan CRON_SECRET (harus sama dengan di Render).
+// "bangun" = server gratis Render sedang tidur; UI mengulang permintaan sampai server menjawab.
 const { requireRole, sameOrigin } = require("./_auth");
 
 const COOLDOWN_MS = 30 * 60 * 1000;
+// shortcut: batas 30 menit dihitung per instance (memori), jadi tidak mutlak. Batas yang tegas ada di bot:
+// isi USER_DAILY_RUNS dan GLOBAL_DAILY_RUNS di Render, dan bot menolak run bertumpuk lewat "sudah-berjalan".
+let lastStart = 0;
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") return res.status(405).json({ error: "Gunakan POST" });
   if (!sameOrigin(req)) return res.status(403).json({ error: "Asal permintaan ditolak" });
   if (!(await requireRole(req, res, "admin"))) return;
-
-  const body = req.body && typeof req.body === "object" ? req.body : {};
-  // hanya kunci berpola aman yang diteruskan ke workflow; kunci tak dikenal diabaikan oleh agent
-  const kategori = (Array.isArray(body.kategori) ? body.kategori : []).filter((k) => /^[\w-]{1,40}$/.test(k));
-  const telegram = body.telegram === false ? "false" : "true";
-
+  const base = (process.env.BOT_URL || "").replace(/\/+$/, "");
+  const secret = process.env.CRON_SECRET;
+  if (!base || !secret) return res.status(503).json({ error: "BOT_URL atau CRON_SECRET belum diisi di server" });
+  if (Date.now() - lastStart < COOLDOWN_MS) {
+    return res.status(429).json({ error: "Tarik berita dibatasi sekali per 30 menit", retryAt: new Date(lastStart + COOLDOWN_MS).toISOString() });
+  }
   try {
-    const { workflow_runs: runs = [] } = await gh(`/actions/workflows/${WORKFLOW}/runs?per_page=10`);
-    if (runs.some((r) => r.status !== "completed")) {
-      return res.status(409).json({ error: "Masih ada proses yang berjalan" });
+    const r = await fetch(`${base}/cron`, { method: "POST", headers: { "X-Cron-Secret": secret }, signal: AbortSignal.timeout(8000) });
+    const body = (await r.text()).trim();
+    if (r.status === 202) {
+      if (body === "dimulai") lastStart = Date.now();
+      return res.status(202).json({ state: body === "sudah-berjalan" ? "sudah-berjalan" : "dimulai" });
     }
-    const manual = runs.find((r) => r.event === "workflow_dispatch");
-    const retryAt = manual ? Date.parse(manual.created_at) + COOLDOWN_MS : 0;
-    if (retryAt > Date.now()) {
-      return res.status(429).json({ error: "Tarik berita dibatasi sekali per 30 menit", retryAt: new Date(retryAt).toISOString() });
+    if (r.status === 403 || r.status === 404) {
+      return res.status(502).json({ error: "Bot menolak pemicu: samakan CRON_SECRET dengan Render (di Render CRON_SECRET harus terisi, minimal 16 karakter)" });
     }
-    await gh(`/actions/workflows/${WORKFLOW}/dispatches`, {
-      method: "POST",
-      body: { ref: REF, inputs: { kategori: kategori.join(","), telegram } },
-    });
-    return res.status(202).json({ ok: true });
+    return res.status(202).json({ state: "bangun" }); // 5xx dari proxy Render saat server masih bangun
   } catch (e) {
-    return res.status(502).json({ error: "Gagal menghubungi GitHub" });
+    return res.status(202).json({ state: "bangun" }); // timeout: server tidur
   }
 };
