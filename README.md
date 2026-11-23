@@ -68,7 +68,11 @@ melakukan web search).
 1. Push folder ini ke repositori GitHub (privat disarankan, karena berisi
    nama instansi).
 2. Di repo, buka **Settings → Secrets and variables → Actions**, tambahkan
-   tiga secret: `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`.
+   secret berikut: `GEMINI_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`,
+   `GOOGLE_SERVICE_ACCOUNT_JSON`, `SHEET_ID`. Workflow memakai versi Gemini
+   (`agent_gemini.py`). Untuk memakai versi Claude, di workflow ganti
+   `requirements-gemini.txt` jadi `requirements.txt`, `agent_gemini.py` jadi
+   `agent.py`, dan `GEMINI_API_KEY` jadi `ANTHROPIC_API_KEY`.
 3. Workflow di `.github/workflows/briefing-harian.yml` akan berjalan
    otomatis setiap hari pukul 06:00 WIB. Uji coba manual lewat tab
    **Actions → Briefing Ekonomi Harian → Run workflow**.

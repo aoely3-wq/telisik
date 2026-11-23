@@ -30,15 +30,15 @@ jobs:
           python-version: "3.11"
 
       - name: Pasang dependensi
-        run: pip install -r requirements.txt
+        run: pip install -r requirements-gemini.txt
 
       - name: Jalankan agent
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           SHEET_ID: ${{ secrets.SHEET_ID }}
           KATEGORI: ${{ inputs.kategori }}
           KIRIM_TELEGRAM: ${{ inputs.telegram }}
-        run: python agent.py
+        run: python agent_gemini.py
