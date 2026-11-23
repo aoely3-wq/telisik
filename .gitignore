@@ -1,0 +1,22 @@
+# Rahasia dan konfigurasi lokal: JANGAN pernah di-commit
+.env
+.env.*
+!.env.example
+*.pem
+service-account*.json
+*-credentials.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node dan Vercel
+node_modules/
+.vercel/
+
+# Log dan berkas sistem
+*.log
+.DS_Store
+Thumbs.db
