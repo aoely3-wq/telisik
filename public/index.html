@@ -329,6 +329,7 @@ footer p b{display:block;color:var(--ink2);font-weight:500;margin-bottom:4px}
   <section data-view="berita" aria-labelledby="h-semua">
     <div class="sec-h"><h2 id="h-semua">Semua berita</h2><small id="count"></small></div>
     <div class="rng" style="margin-bottom:16px"><div class="seg" role="group" aria-label="Periode berita, berakhir di tanggal terpilih"><button data-brange="1" aria-pressed="true">Tanggal ini</button><button data-brange="3" aria-pressed="false">3 hari</button><button data-brange="7" aria-pressed="false">7 hari</button><button data-brange="30" aria-pressed="false">30 hari</button><button data-brange="all" aria-pressed="false">Semua</button><button data-brange="custom" aria-pressed="false">Pilih periode</button></div>
+      <label class="search bsearch"><svg class="i" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg><input id="q2" type="search" placeholder="Cari kata kunci pada periode ini" aria-label="Cari berita pada periode terpilih"></label>
       <span class="crange" id="bcrange" hidden><input type="date" id="bf" aria-label="Dari tanggal"><span>sampai</span><input type="date" id="bt" aria-label="Sampai tanggal"></span></div>
     <div class="tabs" id="tabs" role="group" aria-label="Kategori"></div>
     <div class="feed" id="feed"></div>
@@ -585,14 +586,15 @@ function hero(){
   $("#hero").innerHTML=`<article class="lead">${thumb(lead)}<div class="kicker"><span class="c">${kat(lead)}</span><span class="tone t-${lead.tone}">${cap(lead.tone)}</span>${srcLine(lead)}</div><h3>${esc(brief(lead.t))}</h3>${brief(lead.t)!==lead.t?`<p class="more">Berita selengkapnya, silakan telusuri tautan di bawah.</p>`:""}<div class="lk">${openLink(lead)}</div></article>
   <div class="latest"><h4>Lainnya</h4>${rest.map(n=>`<div class="row">${thumb(n)}<div><h3>${esc(n.t)}</h3><div class="m mono">${esc(n.knama)}${n.src?" · "+esc(n.src):""}</div><div class="lk">${openLink(n)}</div></div></div>`).join("")}</div>`;
 }
+// kata kunci (header atau kolom di Semua berita) dicocokkan ke judul, sumber, kategori, dan program; semua kata harus ada
+const hit=n=>{const w=state.q.toLowerCase().split(/\s+/).filter(Boolean);if(!w.length)return true;const s=(n.t+" "+n.src+" "+n.knama+" "+n.program).toLowerCase();return w.every(x=>s.includes(x))};
 function list(){
-  const q=state.q.toLowerCase();
-  shown=brRows().filter(n=>(state.cat==="all"||n.k===state.cat)&&(!q||(n.t+n.src+n.knama+n.program).toLowerCase().includes(q)));
+  shown=brRows().filter(n=>(state.cat==="all"||n.k===state.cat)&&hit(n));
   $("#feed").innerHTML=shown.length?shown.map(card).join(""):`<div class="empty">Tidak ada berita yang cocok. Ubah kata kunci, kategori, atau periode tanggal.</div>`;
   $("#count").textContent=shown.length+" berita";
 }
 function tabs(){
-  const rs=brRows(),cnt=k=>rs.filter(n=>k==="all"||n.k===k).length;
+  const rs=brRows().filter(hit),cnt=k=>rs.filter(n=>k==="all"||n.k===k).length;
   if(br.range==="custom"&&!br.from){br.from=dates[dates.length-1]||"";br.to=dates[0]||""}   // bawaan: seluruh data, lalu dipersempit
   $("#bcrange").hidden=br.range!=="custom";
   if(br.range==="custom"){$("#bf").value=br.from;$("#bt").value=br.to}
@@ -720,7 +722,7 @@ document.addEventListener("click",e=>{
   if(b){if(b.dataset.range)ts.range=b.dataset.range;else ts.tone=b.dataset.tf;tone()}
   if(!e.target.closest(".genwrap"))closeGen();
 });
-$("#q").addEventListener("input",e=>{state.q=e.target.value;list();armImgs()});
+for(const id of ["#q","#q2"])$(id).addEventListener("input",e=>{state.q=e.target.value;$("#q").value=$("#q2").value=state.q;tabs();list();armImgs()});
 $("#date").addEventListener("change",e=>{
   const v=e.target.value;if(!v||!dates.length)return;
   let i=dates.indexOf(v);
