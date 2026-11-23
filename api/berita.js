@@ -18,7 +18,8 @@ module.exports = async (req, res) => {
     res.setHeader("Cache-Control", "no-store");
     return res.status(200).json({
       rows: all.filter((r) => keep.has(r.tanggal)).sort((a, b) => a.nomor - b.nomor),
-      meta: { maxNomor: last.nomor, lastRun: last.tanggal ? `${last.tanggal} ${last.waktu}`.trim() : "" },
+      // Waktu Eksekusi dari bot sudah memuat tanggal ("19/11/2026 12:14 - Percobaan 2"); jika hanya jam, tambahkan tanggal berita
+      meta: { maxNomor: last.nomor, lastRun: /\d{1,2}\/\d{1,2}\/\d{4}/.test(last.waktu) ? last.waktu : last.tanggal ? `${last.tanggal} ${last.waktu}`.trim() : "" },
     });
   } catch (e) {
     return res.status(502).json({ error: "Gagal membaca Google Sheet" });
