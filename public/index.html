@@ -592,7 +592,11 @@ function list(){
   $("#count").textContent=shown.length+" berita";
 }
 function tabs(){
-  const rs=day(),cnt=k=>rs.filter(n=>k==="all"||n.k===k).length;
+  const rs=brRows(),cnt=k=>rs.filter(n=>k==="all"||n.k===k).length;
+  if(br.range==="custom"&&!br.from){br.from=dates[dates.length-1]||"";br.to=dates[0]||""}   // bawaan: seluruh data, lalu dipersempit
+  $("#bcrange").hidden=br.range!=="custom";
+  if(br.range==="custom"){$("#bf").value=br.from;$("#bt").value=br.to}
+  document.querySelectorAll("[data-brange]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.brange===br.range));
   $("#tabs").innerHTML=[{k:"all",n:"Semua"},...CATS].map(c=>`<button class="tab" data-cat="${esc(c.k)}" aria-pressed="${state.cat===c.k}">${esc(c.n)}<i>${cnt(c.k)}</i></button>`).join("");
 }
 // satu kotak per berita; kotak berisi berita bisa diklik untuk membuka sumbernya, kotak kosong melengkapi sampai empat
