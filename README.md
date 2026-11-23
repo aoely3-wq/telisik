@@ -36,8 +36,8 @@ bot Render  ──menulis──▶  Google Sheet (tab "Berita")  ◀──membac
 ## Login dan peran
 | Akun | Boleh | Password awal |
 |---|---|---|
-| `tamu` | melihat berita, tone, dan NETRA | `tamu` (atau env `TAMU_PASSWORD`) |
-| `admin` | semua itu, **tarik berita**, **menu WhatsApp**, dan **ganti password** | env `ADMIN_PASSWORD` |
+| `tamu` | berita, tone, rekomendasi NETRA, dan menu WhatsApp (tanpa tarik berita dan ganti password) | `tamu` (atau env `TAMU_PASSWORD`) |
+| `admin` | semua itu, ditambah **tarik berita** dan **ganti password** | env `ADMIN_PASSWORD` |
 
 - Sesi: cookie `HttpOnly`, `Secure`, `SameSite=Strict`, berlaku 12 jam, ditandatangani `SESSION_SECRET`.
 - Menu akun (ikon orang): Ganti password (admin: password sendiri minimal 12 karakter, dan password tamu
@@ -48,7 +48,7 @@ bot Render  ──menulis──▶  Google Sheet (tab "Berita")  ◀──membac
 - Pembatas percobaan login ada di memori per instance (5 kegagalan per IP per 10 menit), jadi tidak mutlak;
   untuk batas ketat pasang Vercel Firewall rate limit. Untuk akses per orang pasang Vercel Authentication.
 
-## Menu WhatsApp (admin)
+## Menu WhatsApp (admin dan tamu)
 Menyusun pesan siap kirim dari berita pada tanggal yang dipilih di header: Rekomendasi NETRA di atas, lalu
 berita positif lainnya, netral, dan negatif, bernomor, dengan link artikel pada baris sendiri. Berita bisa
 dicentang satu per satu. **Salin pesan** atau **Buka WhatsApp** (pilih grup, lalu kirim manual). Pengiriman

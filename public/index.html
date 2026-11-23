@@ -485,9 +485,9 @@ function buildCats(){
 function gate(msg){$("#gate").hidden=false;$("#gerr").textContent=msg||"";$("#un").focus()}
 function applyRole(){
   const admin=ME.role==="admin";
-  $("#genwrap").hidden=!admin;$("#openpw").hidden=!admin;$("#navwa").hidden=!admin;
+  $("#genwrap").hidden=!admin;$("#openpw").hidden=!admin;$("#navwa").hidden=false;   // tamu: semua menu kecuali Tarik berita dan ganti password
   cur=fromHash();view();
-  $("#whoami").textContent=admin?"Masuk sebagai admin":`Masuk sebagai ${ME.username} (hanya melihat)`;
+  $("#whoami").textContent=admin?"Masuk sebagai admin":`Masuk sebagai ${ME.username} (tanpa Tarik berita)`;
 }
 function closeAcct(){$("#acctp").hidden=true;$("#acct").setAttribute("aria-expanded","false")}
 async function boot(){
@@ -699,8 +699,7 @@ $("#wcopy").onclick=()=>copyText($("#wmsg").value);
 
 /* ---------- tampilan Berita / Tone / WhatsApp ---------- */
 const VIEWS=["berita","tone","wa"];
-// menu WhatsApp hanya untuk admin: non-admin yang membuka #wa dikembalikan ke Berita
-const fromHash=()=>{const v=location.hash.slice(1);return VIEWS.includes(v)&&(v!=="wa"||(ME&&ME.role==="admin"))?v:"berita"};
+const fromHash=()=>{const v=location.hash.slice(1);return VIEWS.includes(v)?v:"berita"};
 let cur=fromHash();
 function view(){
   document.querySelectorAll("[data-view]").forEach(e=>e.hidden=e.dataset.view!==cur);
