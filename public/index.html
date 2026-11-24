@@ -479,6 +479,8 @@ async function api(path,opt={}){
   return{ok:r.ok,status:r.status,body:body||{}};
 }
 const clean=s=>s.replace(/^\s*(?:[•·\-–*]+|\d+[.)])\s+/,"").replace(/[*_`]/g,"").trim();
+// aturan NETRA: "Direkomendasikan" hanya untuk tone positif dan berita di luar PKPN nasional (baris lama di Sheet diturunkan di tampilan)
+const netraLayak=r=>r.netra==="Direkomendasikan"&&(r.tone!=="positif"||r.pkpn==="nas")?{...r,netra:"Dipertimbangkan"}:r;
 const norm=r=>({
   nomor:r.nomor,d:r.tanggal||"",k:r.kategori_key||"",knama:r.kategori_nama||r.kategori||"",sc:r.adegan||"fiskal",
   pkpn:r.pkpn||"",program:r.program||"",programNo:r.program_no||0,
@@ -536,7 +538,7 @@ async function load(fresh){
   const r=await api("/api/berita?days=all"+(fresh?"&fresh=1":"")).catch(()=>({ok:false,status:0,body:{}}));
   if(r.status===401){gate("Sesi berakhir, silakan masuk lagi");$("#note").textContent="";return}
   if(!r.ok){$("#note").innerHTML='Gagal memuat data. <button class="lnk" id="retry">Coba lagi</button>';$("#retry").onclick=()=>load();return}
-  ROWS=(r.body.rows||[]).map(norm);
+  ROWS=(r.body.rows||[]).map(norm).map(netraLayak);
   LATEST_RUN=ROWS.reduce((m,x)=>x.run>m?x.run:m,"");
   META=r.body.meta||META;
   dates=[...new Set(ROWS.map(x=>x.d))].filter(Boolean).sort().reverse();
