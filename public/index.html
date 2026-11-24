@@ -66,9 +66,15 @@ svg.i{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stro
 .search:focus-within{border-color:var(--line2);color:var(--ink)}
 .search input{all:unset;flex:1;min-width:0;font-size:14px;color:var(--ink)}
 .search input::placeholder{color:var(--ink3)}
-.views button{padding:8px 0 12px;font-size:14px;color:var(--ink3);border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s var(--ease),border-color .15s var(--ease)}
-.views button:hover{color:var(--ink)}
-.views button[aria-current="page"]{color:var(--ink);font-weight:500;border-bottom-color:var(--accent)}
+/* palet tab: tiap menu dan kategori punya warna sendiri; --on-tc = warna teks di atas warna penuh */
+:root{--tc1:#2D5FAE;--tc2:#6B4FB8;--tc3:#1E8A4C;--tc4:#B26A00;--tc5:#B83A5E;--tc6:#12808F;--tc7:#C4551F;--tc8:#54627E;--on-tc:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--tc1:#7BA3EA;--tc2:#AD98EA;--tc3:#55C88A;--tc4:#E8A93C;--tc5:#EE86A4;--tc6:#4FC3D2;--tc7:#F0925F;--tc8:#A3AFC6;--on-tc:#0C1220}}
+:root[data-theme="dark"]{--tc1:#7BA3EA;--tc2:#AD98EA;--tc3:#55C88A;--tc4:#E8A93C;--tc5:#EE86A4;--tc6:#4FC3D2;--tc7:#F0925F;--tc8:#A3AFC6;--on-tc:#0C1220}
+.views button{--tc:var(--tc1);padding:9px 20px;font-size:16px;font-weight:600;color:var(--tc);background:color-mix(in srgb,var(--tc) 13%,transparent);border-radius:99px;margin-block:4px 12px;transition:background .15s var(--ease),color .15s var(--ease)}
+.views button[data-v="tone"]{--tc:var(--tc2)}
+.views button[data-v="wa"]{--tc:var(--tc3)}
+.views button:hover{background:color-mix(in srgb,var(--tc) 24%,transparent)}
+.views button[aria-current="page"]{background:var(--tc);color:var(--on-tc)}
 @media(max-width:640px){.tag{display:none}.search{order:5;max-width:none;flex-basis:100%}.date{min-width:0}}
 
 main{padding-block:24px 56px;display:flex;flex-direction:column;gap:48px;animation:rise .28s var(--ease) both}
@@ -105,10 +111,12 @@ main{padding-block:24px 56px;display:flex;flex-direction:column;gap:48px;animati
 /* tab kategori */
 .tabs{display:flex;gap:24px;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
-.tab{flex:none;padding:8px 0 12px;font-size:14px;color:var(--ink3);border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;gap:6px;align-items:baseline;transition:color .15s var(--ease),border-color .15s var(--ease)}
-.tab:hover{color:var(--ink)}
-.tab i{font-style:normal;font-family:var(--f-mono);font-size:12px}
-.tab[aria-pressed="true"]{color:var(--ink);font-weight:500;border-bottom-color:var(--accent)}
+.tabs{gap:10px;padding-bottom:14px}
+.tab{--tc:var(--accent);flex:none;padding:8px 16px;font-size:15px;font-weight:600;color:var(--tc);background:color-mix(in srgb,var(--tc) 12%,transparent);border-radius:99px;display:flex;gap:8px;align-items:baseline;transition:background .15s var(--ease),color .15s var(--ease)}
+.tab:hover{background:color-mix(in srgb,var(--tc) 22%,transparent)}
+.tab i{font-style:normal;font-family:var(--f-mono);font-size:12px;font-weight:500;opacity:.85}
+.tab[aria-pressed="true"]{background:var(--tc);color:var(--on-tc)}
+.tab[aria-pressed="true"]:not([style]){color:var(--on-accent)}
 
 /* feed */
 .feed{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:24px}
@@ -603,7 +611,7 @@ function tabs(){
   $("#bcrange").hidden=br.range!=="custom";
   if(br.range==="custom"){$("#bf").value=br.from;$("#bt").value=br.to}
   document.querySelectorAll("[data-brange]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.brange===br.range));
-  $("#tabs").innerHTML=[{k:"all",n:"Semua"},...CATS].map(c=>`<button class="tab" data-cat="${esc(c.k)}" aria-pressed="${state.cat===c.k}">${esc(c.n)}<i>${cnt(c.k)}</i></button>`).join("");
+  $("#tabs").innerHTML=[{k:"all",n:"Semua"},...CATS].map((c,i)=>`<button class="tab"${i?` style="--tc:var(--tc${(i-1)%8+1})"`:""} data-cat="${esc(c.k)}" aria-pressed="${state.cat===c.k}">${esc(c.n)}<i>${cnt(c.k)}</i></button>`).join("");
 }
 // satu kotak per berita; kotak berisi berita bisa diklik untuk membuka sumbernya, kotak kosong melengkapi sampai empat
 function cells(list,b){
