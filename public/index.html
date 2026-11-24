@@ -328,7 +328,7 @@ footer p b{display:block;color:var(--ink2);font-weight:500;margin-bottom:4px}
 
   <section data-view="berita" aria-labelledby="h-semua">
     <div class="sec-h"><h2 id="h-semua">Semua berita</h2><small id="count"></small></div>
-    <div class="rng" style="margin-bottom:16px"><div class="seg" role="group" aria-label="Periode berita, berakhir di tanggal terpilih"><button data-brange="1" aria-pressed="true">Tanggal ini</button><button data-brange="3" aria-pressed="false">3 hari</button><button data-brange="7" aria-pressed="false">7 hari</button><button data-brange="30" aria-pressed="false">30 hari</button><button data-brange="all" aria-pressed="false">Semua</button><button data-brange="custom" aria-pressed="false">Pilih periode</button></div>
+    <div class="rng" style="margin-bottom:16px"><div class="seg" role="group" aria-label="Periode berita, berakhir di tanggal terpilih"><button data-brange="run" aria-pressed="true" title="Semua berita yang masuk pada penarikan bot terakhir, apa pun tanggal beritanya">Tarikan terakhir</button><button data-brange="1" aria-pressed="false">Tanggal ini</button><button data-brange="3" aria-pressed="false">3 hari</button><button data-brange="7" aria-pressed="false">7 hari</button><button data-brange="30" aria-pressed="false">30 hari</button><button data-brange="all" aria-pressed="false">Semua</button><button data-brange="custom" aria-pressed="false">Pilih periode</button></div>
       <label class="search bsearch"><svg class="i" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg><input id="q2" type="search" placeholder="Cari kata kunci pada periode ini" aria-label="Cari berita pada periode terpilih"></label>
       <span class="crange" id="bcrange" hidden><input type="date" id="bf" aria-label="Dari tanggal"><span>sampai</span><input type="date" id="bt" aria-label="Sampai tanggal"></span></div>
     <div class="tabs" id="tabs" role="group" aria-label="Kategori"></div>
@@ -449,15 +449,17 @@ const copyText=t=>(navigator.clipboard?navigator.clipboard.writeText(t):Promise.
 
 /* ---------- data (baris sudah dinormalkan oleh /api/berita dari tab "Berita" milik bot) ---------- */
 let ME=null;
-let ROWS=[],dates=[],shown=[],elig=[],META={maxNomor:0,lastRun:""};
+let ROWS=[],dates=[],shown=[],elig=[],META={maxNomor:0,lastRun:""},LATEST_RUN="";   // LATEST_RUN = tanggal eksekusi bot terbaru (ISO)
 const imgCache=new Map();   // link berita -> URL gambar ("" = tidak ada)
-const state={cat:"all",q:"",di:0},ts={range:"3",tone:"semua",cat:"all"},br={range:"1",from:"",to:""};   // br = periode "Semua berita" di tab Berita
+const state={cat:"all",q:"",di:0},ts={range:"3",tone:"semua",cat:"all"},br={range:"run",from:"",to:""};   // br = periode "Semua berita" di tab Berita
 const day=()=>ROWS.filter(x=>x.d===dates[state.di]);
 const addDays=(d,n)=>{const t=new Date(d+"T00:00:00Z");t.setUTCDate(t.getUTCDate()+n);return t.toISOString().slice(0,10)};
 // rentang kalender yang berakhir di tanggal terpilih (1/3/7/30 hari), seluruh data, atau rentang kustom
 const rangeRows=(o=ts)=>{
   const end=dates[state.di]||"";
-  const [a,b]=o.range==="all"?["","9999-12-31"]:o.range==="custom"?[o.from||"",o.to||"9999-12-31"]:[addDays(end,1-(+o.range)),end];
+  if(o.range==="run"&&LATEST_RUN)return ROWS.filter(x=>x.run===LATEST_RUN);   // semua yang ditarik bot pada eksekusi terakhir, apa pun tanggal beritanya
+  const rg=o.range==="run"?"1":o.range;
+  const [a,b]=rg==="all"?["","9999-12-31"]:rg==="custom"?[o.from||"",o.to||"9999-12-31"]:[addDays(end,1-(+rg)),end];
   return ROWS.filter(x=>x.d>=a&&x.d<=b);
 };
 // berita pada periode tab Berita, tanggal terbaru dulu
@@ -472,6 +474,7 @@ const clean=s=>s.replace(/^\s*(?:[•·\-–*]+|\d+[.)])\s+/,"").replace(/[*_`]/
 const norm=r=>({
   nomor:r.nomor,d:r.tanggal||"",k:r.kategori_key||"",knama:r.kategori_nama||r.kategori||"",sc:r.adegan||"fiskal",
   pkpn:r.pkpn||"",program:r.program||"",programNo:r.program_no||0,
+  run:(m=>m?`${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`:"")(/(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(r.waktu||"")),   // tanggal bot menarik berita ini
   t:clean(r.teks||""),link:safeUrl(r.link),src:r.sumber||"",
   tone:["positif","netral","negatif"].includes(r.tone)?r.tone:"netral",netra:r.netra||"",
   v:!!(r.verifikasi||"").trim(),sent:!!(r.diteruskan||"").trim()
@@ -526,6 +529,7 @@ async function load(fresh){
   if(r.status===401){gate("Sesi berakhir, silakan masuk lagi");$("#note").textContent="";return}
   if(!r.ok){$("#note").innerHTML='Gagal memuat data. <button class="lnk" id="retry">Coba lagi</button>';$("#retry").onclick=()=>load();return}
   ROWS=(r.body.rows||[]).map(norm);
+  LATEST_RUN=ROWS.reduce((m,x)=>x.run>m?x.run:m,"");
   META=r.body.meta||META;
   dates=[...new Set(ROWS.map(x=>x.d))].filter(Boolean).sort().reverse();
   state.di=Math.min(state.di,Math.max(0,dates.length-1));
