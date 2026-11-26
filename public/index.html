@@ -474,7 +474,8 @@ const rangeRows=(o=ts)=>{
 const brRows=()=>rangeRows(br).slice().sort((a,b)=>b.d.localeCompare(a.d)||a.nomor-b.nomor);
 
 async function api(path,opt={}){
-  const r=await fetch(path,{...opt,headers:{"Content-Type":"application/json"}});
+  // batas 30 detik: permintaan yang menggantung tidak boleh menghentikan pemantauan "Tarik berita"
+  const r=await fetch(path,{...opt,signal:AbortSignal.timeout(30000),headers:{"Content-Type":"application/json"}});
   let body=null;try{body=await r.json()}catch(e){}
   return{ok:r.ok,status:r.status,body:body||{}};
 }
@@ -785,13 +786,21 @@ $("#go").onclick=async()=>{
   if(!started)return stopRun("Server bot belum bangun. Coba lagi sebentar.",true);
   drawSteps(1);
   const t0=Date.now();
+  let timer=0,busy=false;
   const poll=async()=>{
-    await load(true);
+    if(!running||busy)return;
+    busy=true;clearTimeout(timer);
+    try{await load(true)}catch(e){}   // gagal sekali tidak boleh memutus pemantauan
+    busy=false;
     if(META.maxNomor>before){stopRun("Berita terbaru sudah masuk");drawSteps(3);return}
-    if(Date.now()-t0>12*60000){stopRun("Belum ada berita baru. Bot mungkin masih berjalan atau memang tidak ada berita baru.");return}
-    setTimeout(poll,15000);
+    const menit=Math.floor((Date.now()-t0)/60000);
+    if(menit>=15){stopRun("Belum ada berita baru. Bot mungkin masih berjalan atau memang tidak ada berita baru. Muat ulang halaman beberapa menit lagi.",true);return}
+    drawSteps(1,menit?`berjalan ${menit} mnt`:"berjalan");   // menit yang bertambah menandakan pemantauan masih hidup
+    timer=setTimeout(poll,15000);
   };
-  setTimeout(poll,15000);
+  // kembali ke tab ini (atau layar HP menyala lagi): periksa saat itu juga
+  document.onvisibilitychange=()=>{if(!document.hidden)poll()};
+  timer=setTimeout(poll,15000);
 };
 
 /* ---------- mulai ---------- */
